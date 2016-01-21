@@ -1,0 +1,65 @@
+/* switches */
+{
+"Hosts" : [
+    {
+        "IpAddress": "192.168.10.1",
+        "MacAddress": "00:00:00:11:11:01",
+        "Prefix": "24"
+    },
+    {
+        "IpAddress": "192.168.10.2",
+        "MacAddress": "00:00:00:11:22:02",
+        "Prefix": "24"
+    },
+    {
+        "IpAddress": "192.168.10.3",
+        "MacAddress": "00:00:00:11:33:03",
+        "Prefix": "24"
+    },
+    {
+        "IpAddress": "192.168.20.1",
+        "MacAddress": "00:00:00:22:11:01",
+        "Prefix": "24"
+    },
+    {
+        "IpAddress": "192.168.20.2",
+        "MacAddress": "00:00:00:22:22:02",
+        "Prefix": "24"
+    },
+    {
+        "IpAddress": "192.168.20.3",
+        "MacAddress": "00:00:00:22:33:03",
+        "Prefix": "24"
+    },
+    {
+        "IpAddress": "192.168.30.1",
+        "MacAddress": "00:00:00:33:11:01",
+        "Prefix": "24"
+    },
+    {
+        "IpAddress": "192.168.30.2",
+        "MacAddress": "00:00:00:33:22:02",
+        "Prefix": "24"
+    },
+    {
+        "IpAddress": "192.168.30.3",
+        "MacAddress": "00:00:00:33:33:03",
+        "Prefix": "24"
+    },
+    {
+        "IpAddress": "192.168.40.1",
+        "MacAddress": "00:00:00:44:11:01",
+        "Prefix": "24"
+    },    
+    {
+        "IpAddress": "192.168.40.2",
+        "MacAddress": "00:00:00:44:22:02",
+        "Prefix": "24"
+    },
+    {
+        "IpAddress": "192.168.40.3",
+        "MacAddress": "00:00:00:44:33:03",
+        "Prefix": "24"
+    }
+]
+}
