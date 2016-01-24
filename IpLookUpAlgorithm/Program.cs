@@ -11,8 +11,10 @@ namespace IpLookUpAlgorithm
     class IpLookUpAlgorithm
     {
 
-        public static Dictionary<string, List<Node>> Prefixes = new Dictionary<string, List<Node>>();
-        public static BinaryTreeImp tree = new BinaryTreeImp();
+        public static Dictionary<string[], List<Node>> Prefixes = new Dictionary<string[], List<Node>>();
+        public static BinaryTreeImp Tree = new BinaryTreeImp();
+        public static byte[] Network = new byte[32];
+        public static byte[] NextHop = new byte[32]; 
         //converting from dec to bin//
         public static string ConvertDecToBin(string address)
         {
@@ -25,6 +27,7 @@ namespace IpLookUpAlgorithm
             {
                 string zeros = string.Empty;
                 string result = Convert.ToString(Convert.ToInt32(number, fromBase), toBase);
+                //for making all parts of IP address to be in 8 symbols length//
                 if (result.Length <= 7)
                 {
                     for (int i = 0; i <= (7 - result.Length); i++)
@@ -38,63 +41,101 @@ namespace IpLookUpAlgorithm
             return sb.ToString();
         }
 
+        //Creates index array by calculating subnets and combines nodes depending to the subnet in which they are//
+        public static void CreateRadixArray(Node root) 
+        {
+            Node temp;
+            temp = root;
+            if(root == null) return;
+
+            CreateRadixArray(root.left);
+            string[] ranges =  FindTheIpRange(temp.data.IpAddres, temp.data.Prefix).Split(':');
+            
+            if (!Prefixes.ContainsKey(ranges)) 
+            {
+                Prefixes.Add(ranges, new List<Node>());
+            }
+            if (temp.data.IpAddres.CompareTo(ranges[0]) >= 0 && temp.data.IpAddres.CompareTo(ranges[1]) <= 0) 
+            {
+                Prefixes[ranges].Add(temp);
+            }
+            CreateRadixArray(root.right);
+        }
+
         //converting ip to bin and breaking address into strides//
-        public static void IpLookUp(string IP, int maskLen, int stride)
+        public static void AddressSplitUp(string IP, int maskLen, int stride)
         {
             string binIP = ConvertDecToBin(IP);
             int size = (maskLen/stride);
             string[] strides = new string[size];
             int index = 0;
-            //braking IP to the actual strides//
+            //braking IP into separate parts/strides//
             for (int i = 0, p = 0; i < size; i++, p++)
             {
                 if ((index >= binIP.Length) || ((index + stride) > binIP.Length)) break;
                 strides[p] = binIP.Substring(index, stride);
                 index += stride;
             }
-            int offset = 0;
-            for (int i = 0; i < strides.Length; i++)
-            {
-                StringBuilder sb = new StringBuilder();
-                if (i > strides.Length) 
-                    break;
-                for (int j = 0; j <= i; j++) 
-                {
-                    sb.Append(strides[j]);
-                }
-                CreateIndexArray(sb.ToString(), tree.root);
-            }
-            foreach (var s in Prefixes)
-            {
-                Console.WriteLine(s.Key);
-                foreach (var t in s.Value) 
-                {
-                    Console.WriteLine("     "+t.data.IpAddres);
-                }
-            }
         }
-        //checks starting sequence of IP address and combines them into dictionary coresponding to their begining sequence//
-        public static void CreateIndexArray(string stride,Node root) 
+        //calculates network ip address from subnet mask by doing logical AND operation//
+        //calculates and the range of given subnet//
+        public static string FindTheIpRange(string ipAddr,string subNetMask) 
         {
-            Node temp;
-            temp = root;
-            if (temp == null)
-                return;
-            CreateIndexArray(stride, temp.left);
-            if (!Prefixes.ContainsKey(stride))
+            StringBuilder startIP = new StringBuilder();
+            StringBuilder endIP = new StringBuilder();
+            for (int i = 0; i < ipAddr.Length; i++) 
             {
-                Prefixes.Add(stride, new List<Node>());
-            }
-            else
-            {
-                if (temp.data.IpAddres.StartsWith(stride))
+                if (ipAddr[i] == subNetMask[i]) 
                 {
-                    Prefixes[stride].Add(temp);
-                } 
+                    if (i < 24)
+                    {
+                        startIP.Append(subNetMask[i]);
+                        endIP.Append(subNetMask[i]);
+                    }
+                }
+                else 
+                {
+                    if (i < 24)
+                    {
+                        startIP.Append(ipAddr[i]);
+                        endIP.Append(ipAddr[i]);  
+                    }
+                }
             }
-            CreateIndexArray(stride, temp.right);
+            //making logical OR operation to find last ip address of the given subnet//
+            int l = 24;
+            
+            while ( l < 32)
+            {
+                endIP.Append("1");
+                startIP.Append("0");
+                l++;
+            }
+            string range = startIP.ToString() + ":" + endIP.ToString();
+
+            Console.WriteLine(startIP);
+            Console.WriteLine(endIP);
+            return range;
         }
-        //loading IP addresses into the tree formation from json with Newtonsoft.json lib//
+        //calculating the subnet mask and representing it into binary form//
+        public static string ReturnMask(int mask) 
+        {
+            bool[] binMask = new bool[32];
+            StringBuilder binaryMask = new StringBuilder();
+            for (int i = 0; i < mask; i++) 
+            {
+                binMask[i] = true;
+            }
+            for (int i = 0; i < binMask.Length; i++)
+            {
+                if(binMask[i])
+                    binaryMask.Append("1");
+                else
+                    binaryMask.Append("0");
+            }
+            return binaryMask.ToString();
+        }
+        //loading IP addresses into the tree formation from json file//
         public static void ReadJson(string name)
         {
             //Read the file      
@@ -110,21 +151,22 @@ namespace IpLookUpAlgorithm
                         Data data = new Data();
                         //Console.WriteLine(item.ToString());
                         data.IpAddres = ConvertDecToBin(item["IpAddress"].ToString());
+                        int temp = Int32.Parse(item["Prefix"].ToString());
                         data.MacAddres = item["MacAddress"].ToString();
-                        data.Prefix = item["Prefix"];
+                        data.Prefix = ReturnMask(temp);
                         Node node = new Node(data);
-                        if (tree.root == null)
+                        if (Tree.Root == null)
                         {
-                            Node iniRoot = tree.AddNode(data);
-                            tree.InsertNode(tree.root, iniRoot);
+                            Node iniRoot = Tree.AddNode(data);
+                            Tree.InsertNode(Tree.Root, iniRoot);
                         }
                         else
                         {
-                            tree.InsertNode(tree.root, tree.AddNode(data));
+                            Tree.InsertNode(Tree.Root, Tree.AddNode(data));
                         }
                     }
 
-                    //tree.DisplayTree(tree.root);
+                    Tree.DisplayTree(Tree.Root);
                 }
             }
             catch (Exception e)
@@ -136,7 +178,19 @@ namespace IpLookUpAlgorithm
         static void Main(string[] args)
         {
             ReadJson("IpConfig.json");
-            IpLookUp("192.168.10.4", 24, 4);            
+            AddressSplitUp("192.168.10.4", 24, 4);
+            CreateRadixArray(Tree.Root);
+            foreach (var pair in Prefixes) 
+            {
+                foreach (var k in pair.Key)
+                {
+                    Console.WriteLine(k);
+                }
+                foreach (var v in pair.Value)
+                {
+                    Console.WriteLine("     "+v.data.IpAddres);
+                }
+            }
         }
     }
 }

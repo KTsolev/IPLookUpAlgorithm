@@ -8,23 +8,23 @@ namespace IpLookUpAlgorithm
 {
     class BinaryTreeImp
     {
-        public Node root;
+        public Node Root;
      
-        static int count = 0;
+        static int Count = 0;
         
         public BinaryTreeImp()
         {
-            root = null;
+            Root = null;
         }
         public Node AddNode(Data data)
         {
             Node newNode = new Node(data);
 
-            if (root == null)
+            if (Root == null)
             {
-                root = newNode;
+                Root = newNode;
             }
-            count++;
+            Count++;
             return newNode;
         }
         //Inserting new node into the tree based on IP address. IP addresses are compared and based on them is made desicions in which branch of the tree to be inserted(left or right)//
@@ -33,7 +33,7 @@ namespace IpLookUpAlgorithm
             Node temp;
             temp = root;
 
-            if (newNode.data.IpAddres.CompareTo(temp.data.IpAddres) < 0)
+            if (newNode.data.IpAddres.CompareTo(temp.data.IpAddres) > 0)
             {
                 if (temp.left == null)
                 {
@@ -58,7 +58,6 @@ namespace IpLookUpAlgorithm
                 }
             }
         }
-
 
         public void DisplayTree(Node root)
         {
