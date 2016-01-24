@@ -15,8 +15,7 @@ namespace IpLookUpAlgorithm
         static BinaryTreeImp Tree = new BinaryTreeImp();
         static List<LongestMatch> ListOfLongestMatches = new List<LongestMatch>();
         static LongestMatch lm = new LongestMatch();
-        static int longestMatch = 0;
-        static string headPointer = string.Empty;
+
 
         //converting from dec to bin//
         public static string ConvertDecToBin(string address)
@@ -122,7 +121,7 @@ namespace IpLookUpAlgorithm
         }
 
         ////converting ip to bin and breaking address into strides//
-        public static void AddressSplitUp(string IP, int maskLen, int stride)
+        public void AddressSplitUp(string IP, int maskLen, int stride)
         {
             string binIP = ConvertDecToBin(IP);
             int size = (maskLen / stride);
@@ -138,43 +137,51 @@ namespace IpLookUpAlgorithm
             index = 0;
             foreach (var s in strides) 
             {
-                FindNextHop(s,index);
+                FindNextHop(s, index, Tree.Root);
                 index += s.Length;
             }
         }
-        //searches for the ip among ips stored in the dictionary//
-        public static string FindNextHop(string stride,int offset) 
+        public static int CheckIfWeAreFoundLongestMatch(bool[] arr)
         {
-            if (stride.Length == 0 || stride == null)
-                return string.Empty;
+            int count = 0;
+            foreach(var a in arr)
+            {
+                if(a)
+                count++;
+            }
+            return count;
+        }
+        //searches for the ip among ips stored in the dictionary//
+        public void FindNextHop(string stride,int offset,Node root) 
+        {
+            Node temp;
+            temp = root;
 
-            foreach (var p in Prefixes) 
+            if (temp == null) 
+                return;
+            if (stride.Length == 0 || stride == null)
+                return;
+            foreach (var key in Prefixes.Keys) 
             {
                 for (int i = offset; i < offset + stride.Length; i++)
                 {
-                    if (i > p.Key[0].Length || i > stride.Length) 
-                        break;
-                    if (p.Key[0][i] == stride[i - offset])
+                    if (key[0][i] == stride[i - offset])
                     {
-                        longestMatch++;
-                        headPointer = p.Key[0];
-                        LongestMatch lm1 = new LongestMatch(headPointer, longestMatch);
-                        if (lm.longestMatch < lm1.longestMatch)
-                        {
-                            lm = lm1;
-                            ListOfLongestMatches.Add(lm1);
-                        }
+                        lm.longestMatch[i] = true;
                     }
                 }
-                longestMatch = 0;
-                headPointer = string.Empty;
-            }
-            Console.WriteLine("----------------------------------");
-            foreach (var lm2 in ListOfLongestMatches) 
-            {
-                Console.WriteLine(lm2.headPointer+"|"+lm2.longestMatch);
-            }
-            return null;
+
+                lm.headPointer = temp.data.IpAddres;
+                ListOfLongestMatches.Add(lm);
+
+                int count = CheckIfWeAreFoundLongestMatch(lm.longestMatch);
+
+                if (count >= 2)
+                {
+                    return;
+                }
+            }             
+
         }
         //loading IP addresses into the tree formation from json file//
         public static void ReadJson(string name)
@@ -218,9 +225,11 @@ namespace IpLookUpAlgorithm
         }
         static void Main(string[] args)
         {
+            IpLookUpAlgorithm iplp = new IpLookUpAlgorithm();
             ReadJson("IpConfig.json");
             CreateRadixArray(Tree.Root);
-            AddressSplitUp("192.168.30.5", 24, 4);
+            iplp.AddressSplitUp("192.168.10.5", 24, 4);
+            Console.WriteLine("###################################");
             foreach (var pair in Prefixes)
             {
                 foreach (var k in pair.Key)
@@ -232,7 +241,11 @@ namespace IpLookUpAlgorithm
                     Console.WriteLine("     " + v.data.IpAddres);
                 }
             }
-            Console.WriteLine("###################################");
+            Console.WriteLine("----------------------------------");
+            foreach (var lm2 in ListOfLongestMatches)
+            {
+                Console.WriteLine(lm2.headPointer + "|" + CheckIfWeAreFoundLongestMatch(lm2.longestMatch));
+            }
         }
     }
 }

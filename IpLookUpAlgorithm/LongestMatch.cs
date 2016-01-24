@@ -10,9 +10,9 @@ namespace IpLookUpAlgorithm
     {
         public string headPointer {get; set;}
         
-        public int longestMatch { get; set; }
+        public bool[] longestMatch { get; set; }
         
-        public LongestMatch(string pointer, int count) 
+        public LongestMatch(string pointer, bool[] count) 
         {
             this.headPointer = pointer;
             this.longestMatch = count;
@@ -20,7 +20,8 @@ namespace IpLookUpAlgorithm
 
         public LongestMatch()
         {
-            // TODO: Complete member initialization
+            this.headPointer = String.Empty;
+            this.longestMatch = new bool[32];
         }
     }
 }
