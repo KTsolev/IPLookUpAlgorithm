@@ -11,10 +11,13 @@ namespace IpLookUpAlgorithm
     class IpLookUpAlgorithm
     {
 
-        public static Dictionary<string[], List<Node>> Prefixes = new Dictionary<string[], List<Node>>();
-        public static BinaryTreeImp Tree = new BinaryTreeImp();
-        public static byte[] Network = new byte[32];
-        public static byte[] NextHop = new byte[32]; 
+        static Dictionary<string[], List<Node>> Prefixes = new Dictionary<string[], List<Node>>();
+        static BinaryTreeImp Tree = new BinaryTreeImp();
+        static List<LongestMatch> ListOfLongestMatches = new List<LongestMatch>();
+        static LongestMatch lm = new LongestMatch();
+        static int longestMatch = 0;
+        static string headPointer = string.Empty;
+
         //converting from dec to bin//
         public static string ConvertDecToBin(string address)
         {
@@ -41,6 +44,62 @@ namespace IpLookUpAlgorithm
             return sb.ToString();
         }
 
+        //calculates network ip address from subnet mask by doing logical AND operation//
+        //calculates and the range of given subnet//
+        public static string FindTheIpRange(string ipAddr, string subNetMask)
+        {
+            StringBuilder startIP = new StringBuilder();
+            StringBuilder endIP = new StringBuilder();
+            for (int i = 0; i < ipAddr.Length; i++)
+            {
+                if (ipAddr[i] == subNetMask[i])
+                {
+                    if (i < 24)
+                    {
+                        startIP.Append(subNetMask[i]);
+                        endIP.Append(subNetMask[i]);
+                    }
+                }
+                else
+                {
+                    if (i < 24)
+                    {
+                        startIP.Append(ipAddr[i]);
+                        endIP.Append(ipAddr[i]);
+                    }
+                }
+            }
+            //making logical OR operation to find last ip address of the given subnet//
+            int l = 24;
+
+            while (l < 32)
+            {
+                endIP.Append("1");
+                startIP.Append("0");
+                l++;
+            }
+            string range = startIP.ToString() + ":" + endIP.ToString();
+            return range;
+        }
+
+        //calculating the subnet mask and representing it into binary form//
+        public static string ReturnMask(int mask)
+        {
+            bool[] binMask = new bool[32];
+            StringBuilder binaryMask = new StringBuilder();
+            for (int i = 0; i < mask; i++)
+            {
+                binMask[i] = true;
+            }
+            for (int i = 0; i < binMask.Length; i++)
+            {
+                if (binMask[i])
+                    binaryMask.Append("1");
+                else
+                    binaryMask.Append("0");
+            }
+            return binaryMask.ToString();
+        }
         //Creates index array by calculating subnets and combines nodes depending to the subnet in which they are//
         public static void CreateRadixArray(Node root) 
         {
@@ -62,11 +121,11 @@ namespace IpLookUpAlgorithm
             CreateRadixArray(root.right);
         }
 
-        //converting ip to bin and breaking address into strides//
+        ////converting ip to bin and breaking address into strides//
         public static void AddressSplitUp(string IP, int maskLen, int stride)
         {
             string binIP = ConvertDecToBin(IP);
-            int size = (maskLen/stride);
+            int size = (maskLen / stride);
             string[] strides = new string[size];
             int index = 0;
             //braking IP into separate parts/strides//
@@ -76,64 +135,46 @@ namespace IpLookUpAlgorithm
                 strides[p] = binIP.Substring(index, stride);
                 index += stride;
             }
+            index = 0;
+            foreach (var s in strides) 
+            {
+                FindNextHop(s,index);
+                index += s.Length;
+            }
         }
-        //calculates network ip address from subnet mask by doing logical AND operation//
-        //calculates and the range of given subnet//
-        public static string FindTheIpRange(string ipAddr,string subNetMask) 
+        //searches for the ip among ips stored in the dictionary//
+        public static string FindNextHop(string stride,int offset) 
         {
-            StringBuilder startIP = new StringBuilder();
-            StringBuilder endIP = new StringBuilder();
-            for (int i = 0; i < ipAddr.Length; i++) 
-            {
-                if (ipAddr[i] == subNetMask[i]) 
-                {
-                    if (i < 24)
-                    {
-                        startIP.Append(subNetMask[i]);
-                        endIP.Append(subNetMask[i]);
-                    }
-                }
-                else 
-                {
-                    if (i < 24)
-                    {
-                        startIP.Append(ipAddr[i]);
-                        endIP.Append(ipAddr[i]);  
-                    }
-                }
-            }
-            //making logical OR operation to find last ip address of the given subnet//
-            int l = 24;
-            
-            while ( l < 32)
-            {
-                endIP.Append("1");
-                startIP.Append("0");
-                l++;
-            }
-            string range = startIP.ToString() + ":" + endIP.ToString();
+            if (stride.Length == 0 || stride == null)
+                return string.Empty;
 
-            Console.WriteLine(startIP);
-            Console.WriteLine(endIP);
-            return range;
-        }
-        //calculating the subnet mask and representing it into binary form//
-        public static string ReturnMask(int mask) 
-        {
-            bool[] binMask = new bool[32];
-            StringBuilder binaryMask = new StringBuilder();
-            for (int i = 0; i < mask; i++) 
+            foreach (var p in Prefixes) 
             {
-                binMask[i] = true;
+                for (int i = offset; i < offset + stride.Length; i++)
+                {
+                    if (i > p.Key[0].Length || i > stride.Length) 
+                        break;
+                    if (p.Key[0][i] == stride[i - offset])
+                    {
+                        longestMatch++;
+                        headPointer = p.Key[0];
+                        LongestMatch lm1 = new LongestMatch(headPointer, longestMatch);
+                        if (lm.longestMatch < lm1.longestMatch)
+                        {
+                            lm = lm1;
+                            ListOfLongestMatches.Add(lm1);
+                        }
+                    }
+                }
+                longestMatch = 0;
+                headPointer = string.Empty;
             }
-            for (int i = 0; i < binMask.Length; i++)
+            Console.WriteLine("----------------------------------");
+            foreach (var lm2 in ListOfLongestMatches) 
             {
-                if(binMask[i])
-                    binaryMask.Append("1");
-                else
-                    binaryMask.Append("0");
+                Console.WriteLine(lm2.headPointer+"|"+lm2.longestMatch);
             }
-            return binaryMask.ToString();
+            return null;
         }
         //loading IP addresses into the tree formation from json file//
         public static void ReadJson(string name)
@@ -178,9 +219,9 @@ namespace IpLookUpAlgorithm
         static void Main(string[] args)
         {
             ReadJson("IpConfig.json");
-            AddressSplitUp("192.168.10.4", 24, 4);
             CreateRadixArray(Tree.Root);
-            foreach (var pair in Prefixes) 
+            AddressSplitUp("192.168.30.5", 24, 4);
+            foreach (var pair in Prefixes)
             {
                 foreach (var k in pair.Key)
                 {
@@ -188,9 +229,10 @@ namespace IpLookUpAlgorithm
                 }
                 foreach (var v in pair.Value)
                 {
-                    Console.WriteLine("     "+v.data.IpAddres);
+                    Console.WriteLine("     " + v.data.IpAddres);
                 }
             }
+            Console.WriteLine("###################################");
         }
     }
 }
